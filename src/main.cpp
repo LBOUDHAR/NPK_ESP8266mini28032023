@@ -68,8 +68,12 @@ Ticker mesureTicker;
 Ticker dispayTicker;
 bool m = 0;
 
+#define SensorPin A0
+int soilMoistureValue = 0;
+int soilmoisture;
 
 void setup() {
+    Serial.begin(9600);
     u8g2.begin();
 
     u8g2.clearBuffer();  
@@ -102,7 +106,12 @@ void loop() {
         read_dallas_sensors();
         m = 0;
     }
-   
+    soilMoistureValue = analogRead(SensorPin);  
+    int soilmoisture = map(soilMoistureValue, 710, 277, 0, 100);
+    Serial.printf("Soil Moisture : %u %%\n", soilmoisture);
+    delay(500);
+
+   //Serial.printf("CpuFreqMHz: %u MHz\n", ESP.getCpuFreqMHz());
 }
 
 void Init_DS18B20(int precision){
@@ -129,16 +138,12 @@ void periodicMesure(){
 void periodicDisplay(){
     u8g2.clearBuffer();
     u8g2.setCursor(2, 10);
-    u8g2.println("- Soil Temperature");
+    u8g2.print("- Soil Temperature");
     u8g2.setCursor(2, 22);
     u8g2.print("==================");
     u8g2.setCursor(2, 34);
-    u8g2.print("Temp01 : ");
-    u8g2.print(T_18B20[0]);
-    u8g2.print(" C");
+    u8g2.printf("Temp01 : %2.2f C\n", T_18B20[0]);
     u8g2.setCursor(2, 46);
-    u8g2.print("Temp02 : ");
-    u8g2.print(T_18B20[1]);
-    u8g2.print(" C");    
+    u8g2.printf("Temp02 : %2.2f C\n", T_18B20[1]);
     u8g2.sendBuffer();
 }
