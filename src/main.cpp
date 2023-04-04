@@ -49,6 +49,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <Ticker.h>
+#include "OneButton.h"
 #include "declaration.h"
 
 
@@ -71,6 +72,12 @@ bool m = 0;
 #define SensorPin A0
 int soilMoistureValue = 0;
 int soilmoisture;
+
+#define Button01 0                      // GPIO0 attached to button 
+int k=0;
+OneButton button01(Button01, true);     // external wiring sets the button to LOW when pressed
+
+
 
 void setup() {
     Serial.begin(9600);
@@ -99,17 +106,21 @@ void setup() {
     mesureTicker.attach(4, periodicMesure);
     dispayTicker.attach(1, periodicDisplay);
 
+    button01.attachClick(oneClick);
+
 }
 
 void loop() {
+    button01.tick();
+
     if(m){
         read_dallas_sensors();
+        soilMoistureValue = analogRead(SensorPin);  
+        int soilmoisture = map(soilMoistureValue, 710, 277, 0, 100);
+        Serial.printf("Soil Moisture : %u %%\n", soilmoisture);
         m = 0;
     }
-    soilMoistureValue = analogRead(SensorPin);  
-    int soilmoisture = map(soilMoistureValue, 710, 277, 0, 100);
-    Serial.printf("Soil Moisture : %u %%\n", soilmoisture);
-    delay(500);
+
 
    //Serial.printf("CpuFreqMHz: %u MHz\n", ESP.getCpuFreqMHz());
 }
@@ -145,5 +156,15 @@ void periodicDisplay(){
     u8g2.printf("Temp01 : %2.2f C\n", T_18B20[0]);
     u8g2.setCursor(2, 46);
     u8g2.printf("Temp02 : %2.2f C\n", T_18B20[1]);
+
+    u8g2.setCursor(2, 58);
+    u8g2.print(k);
     u8g2.sendBuffer();
 }
+
+void oneClick(){
+    k++;
+}
+
+
+
