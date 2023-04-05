@@ -9,8 +9,8 @@
   Coder: Lies BOUDHAR
   programmer: Lies BOUDHAR
   maintainer: Lies BOUDHAR
-  Revision: 01/04/2023 at 16:53
-  Microcontroller: ESP8266Mod mini
+  Revision: 05/04/2023 at 02:35
+  Microcontroller: ESP8266 D1 mini wemos
   instagram: soko.009
   youtube: lies boudhar
 **************************************************/
@@ -40,7 +40,8 @@
 
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
+#include <HardwareSerial.h>
 #include <U8g2lib.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -74,14 +75,25 @@ int soilMoistureValue = 0;
 int soilmoisture;
 
 #define Button01 0                      // GPIO0 attached to button 
-int k=0;
+uint8_t k = 1;
 OneButton button01(Button01, true);     // external wiring sets the button to LOW when pressed
 
+#define DE_RE 15                // GPIO15 
+const byte rxPin = 3;           // GPIO3 
+const byte txPin = 1;           // GPIO1 
+HardwareSerial mod(0);
 
+const byte nitr[] = {0x01,0x03, 0x00, 0x1e, 0x00, 0x01, 0xe4, 0x0c};
+const byte phos[] = {0x01,0x03, 0x00, 0x1f, 0x00, 0x01, 0xb5, 0xcc};
+const byte pota[] = {0x01,0x03, 0x00, 0x20, 0x00, 0x01, 0x85, 0xc0};
 
 void setup() {
-    Serial.begin(9600);
+    //Serial.begin(9600);
     u8g2.begin();
+
+    mod.begin(9600);
+    pinMode(DE_RE, OUTPUT);
+    digitalWrite(DE_RE, LOW);   // put RS-485 into receive mode
 
     u8g2.clearBuffer();  
     u8g2.setFont(u8g2_font_7x13B_tf);               
@@ -116,7 +128,7 @@ void loop() {
     if(m){
         read_dallas_sensors();
         soilMoistureValue = analogRead(SensorPin);  
-        int soilmoisture = map(soilMoistureValue, 710, 277, 0, 100);
+        soilmoisture = map(soilMoistureValue, 710, 277, 0, 100);
         Serial.printf("Soil Moisture : %u %%\n", soilmoisture);
         m = 0;
     }
@@ -147,23 +159,42 @@ void periodicMesure(){
 }
 
 void periodicDisplay(){
-    u8g2.clearBuffer();
-    u8g2.setCursor(2, 10);
-    u8g2.print("- Soil Temperature");
-    u8g2.setCursor(2, 22);
-    u8g2.print("==================");
-    u8g2.setCursor(2, 34);
-    u8g2.printf("Temp01 : %2.2f C\n", T_18B20[0]);
-    u8g2.setCursor(2, 46);
-    u8g2.printf("Temp02 : %2.2f C\n", T_18B20[1]);
+    if(k == 1){
+        u8g2.clearBuffer();
+        u8g2.setCursor(2, 10);
+        u8g2.print("- Soil Temperature");
+        u8g2.setCursor(2, 22);
+        u8g2.print("==================");
+        u8g2.setCursor(2, 34);
+        u8g2.printf("Temp01 = %2.2f C\n", T_18B20[0]);
+        u8g2.setCursor(2, 46);
+        u8g2.printf("Temp02 = %2.2f C\n", T_18B20[1]);
+        u8g2.sendBuffer();
+    }else if(k == 2){
+        u8g2.clearBuffer();
+        u8g2.setCursor(2, 10);
+        u8g2.print("- Soil Moisture"); 
+        u8g2.setCursor(2, 34);
+        u8g2.printf("Moisture = %u %%\n", soilmoisture);
+        u8g2.sendBuffer();
+    }else{
+        u8g2.clearBuffer();
+        u8g2.setCursor(2, 10);
+        u8g2.print("- Soil NPK");
+        u8g2.setCursor(2, 22);
+        u8g2.printf("N = %.2f mg/kg\n", T_18B20[0]);
+        u8g2.setCursor(2, 34);
+        u8g2.printf("P = %.2f mg/kg\n", T_18B20[0]);
+        u8g2.setCursor(2, 46);
+        u8g2.printf("K = %.2f mg/kg\n", T_18B20[1]);    
+        u8g2.sendBuffer();        
+    }
 
-    u8g2.setCursor(2, 58);
-    u8g2.print(k);
-    u8g2.sendBuffer();
 }
 
 void oneClick(){
     k++;
+    if(k > 3) k = 1;
 }
 
 
